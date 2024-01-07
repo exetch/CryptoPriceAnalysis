@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import websockets
 
 
@@ -11,7 +12,13 @@ async def fetch_trades(symbol, callback, logger):
                 data = await ws.recv()
                 logger.debug("Получены данные от %s: %s", symbol, data)
                 trade = json.loads(data)
-                callback(trade)
+                trade_data = {
+                    'symbol': trade['s'],
+                    'price': float(trade['p']),
+                    'quantity': float(trade['q']),
+                    'timestamp': datetime.fromtimestamp(trade['T'] / 1000.0)
+                }
+                callback(trade_data)
     except Exception as e:
         logger.error("Ошибка при подключении к WebSocket для %s: %s", symbol, e)
 

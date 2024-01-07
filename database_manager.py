@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, Table, Column, Integer, Float, String, MetaData, DateTime
+import pandas as pd
+from sqlalchemy import create_engine, Table, Column, Integer, Float, String, MetaData, DateTime, text
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -27,3 +28,11 @@ class DatabaseManager:
                 logger.error("Ошибка при вставке данных: %s", e)
             finally:
                 self.data_buffer.clear()
+
+    def fetch_data(self, symbol):
+        with self.engine.begin() as conn:
+            query = text(
+                f"SELECT timestamp, price, quantity, symbol FROM trades WHERE symbol = '{symbol}' ORDER BY timestamp ASC")
+            df = pd.read_sql_query(query, conn)
+            df.sort_values(by='timestamp', inplace=True)
+        return df
