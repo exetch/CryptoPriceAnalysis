@@ -19,9 +19,9 @@ DATABASE_URI = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
 if __name__ == "__main__":
     db_manager = DatabaseManager(DATABASE_URI)
 
-    analyzer = MarketAnalysis(DATABASE_URI)
+    analyzer = MarketAnalysis(db_manager)
     analyzer.analyze()
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(asyncio.gather(
-    #     fetch_trades('ethusdt', lambda data: db_manager.add_trade_data(data, logger), logger),
-    #     fetch_trades('btcusdt', lambda data: db_manager.add_trade_data(data, logger), logger)))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(
+        fetch_trades('ethusdt', lambda data: db_manager.add_trade_data(data, logger), logger),
+        fetch_trades('btcusdt', lambda data: db_manager.add_trade_data(data, logger), logger)))
