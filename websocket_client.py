@@ -4,6 +4,20 @@ import websockets
 
 
 async def fetch_trades(symbol, callback, logger):
+    """
+        Асинхронно получает торговые данные для заданного символа криптовалюты с использованием WebSocket.
+
+        Эта функция подключается к WebSocket Binance, слушает торговые данные в реальном времени
+        для указанного символа (например, 'ETHUSDT') и передаёт полученные данные в callback-функцию для дальнейшей обработки.
+
+        Args:
+            symbol (str): Символ криптовалюты, например 'ETHUSDT'.
+            callback (function): Функция обратного вызова, которая обрабатывает полученные торговые данные.
+            logger (Logger): Объект логгера для записи информационных сообщений и ошибок.
+
+        Exceptions:
+            Ошибки в работе WebSocket или при обработке данных логируются через logger.
+    """
     try:
         uri = f"wss://fstream.binance.com/ws/{symbol}@aggTrade"
         logger.info("Подключение к WebSocket для %s", symbol)

@@ -5,7 +5,22 @@ from datetime import datetime, timedelta
 
 
 class DatabaseManager:
+    """
+        Управление базой данных, включая добавление, извлечение и удаление торговых данных.
+
+        Атрибуты:
+        - engine: Объект движка SQLAlchemy для взаимодействия с базой данных.
+        - metadata: Метаданные для определения структуры таблицы.
+        - trades: Определение таблицы для хранения данных о торгах.
+        - data_buffer: Буфер для временного хранения данных о торгах перед пакетной вставкой.
+    """
     def __init__(self, uri):
+        """
+            Конструктор менеджера базы данных.
+
+            Аргументы:
+            - uri: строка подключения к базе данных.
+        """
         self.engine = create_engine(uri)
         self.metadata = MetaData()
         self.trades = Table('trades', self.metadata,
@@ -18,6 +33,13 @@ class DatabaseManager:
         self.data_buffer = []
 
     def add_trade_data(self, trade_data, logger):
+        """
+            Добавление данных о торгах в базу данных.
+
+            Аргументы:
+            - trade_data: данные о торгах для добавления.
+            - logger: логгер для записи информационных сообщений и ошибок.
+        """
         self.data_buffer.append(trade_data)
         if len(self.data_buffer) >= 100:
             try:
@@ -31,6 +53,12 @@ class DatabaseManager:
                 self.data_buffer.clear()
 
     def fetch_data(self, symbol):
+        """
+            Извлечение данных о торгах для указанного символа за последние 5 минут.
+
+            Аргументы:
+            - symbol: символ криптовалюты для извлечения данных.
+        """
         with self.engine.begin() as conn:
             five_minutes_ago = datetime.now() - timedelta(minutes=5)
             query = text(
@@ -41,6 +69,9 @@ class DatabaseManager:
         return df
 
     def delete_old_data(self):
+        """
+            Удаление устаревших данных из базы данных (старше 5 минут).
+        """
         with self.engine.begin() as conn:
             five_minutes_ago = datetime.now() - timedelta(minutes=5)
             query = text(
