@@ -2,6 +2,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 import logging.config
+
+from market_analysis import MarketAnalysis
 from websocket_client import fetch_trades
 from database_manager import DatabaseManager
 
@@ -16,7 +18,10 @@ DATABASE_URI = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
 
 if __name__ == "__main__":
     db_manager = DatabaseManager(DATABASE_URI)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        fetch_trades('ethusdt', lambda data: db_manager.add_trade_data(data, logger), logger),
-        fetch_trades('btcusdt', lambda data: db_manager.add_trade_data(data, logger), logger)))
+
+    analyzer = MarketAnalysis(DATABASE_URI)
+    analyzer.analyze()
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(asyncio.gather(
+    #     fetch_trades('ethusdt', lambda data: db_manager.add_trade_data(data, logger), logger),
+    #     fetch_trades('btcusdt', lambda data: db_manager.add_trade_data(data, logger), logger)))
