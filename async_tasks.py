@@ -42,14 +42,14 @@ async def analyze_data_forever(logger, analyzer):
     """
     while True:
         result = analyzer.run_analysis()
-        print(result)
+        logger.info(result)
         if result is None:
-            logger.info("Недостаточно данных для анализа")
+            logger.warning("Недостаточно данных для анализа")
         if result:
             actual_price, predicted_price, percentage_change = result
-            if abs(percentage_change) > 0.1:
-                print(
-                    f"Фактическая цена ETH: {actual_price}"
-                    f"Ожидаемая цена ETH c учетом движения BTC: {predicted_price}"
+            if abs(percentage_change) > 1:
+                logger.warning(
+                    f"Фактическая цена ETH: {actual_price}\n"
+                    f"Ожидаемая цена ETH c учетом движения BTC: {predicted_price}\n"
                     f"Собственное изменение цены ETH: {percentage_change}%")
         await asyncio.sleep(60)

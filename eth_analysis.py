@@ -19,10 +19,11 @@ class ETHPriceAnalysis:
             df_btc -- DataFrame содержащий данные по BTC
 
             Возвращает:
-            DataFrame, в котором каждая строка представляет собой слияние данных ETH и BTC по ближайшей временной метке.
+            DataFrame, в котором каждая строка представляет собой слияние данных
+            ETH и BTC по ближайшей временной метке.
         """
-        df = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
-        return df
+        merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+        return merged_data
     def perform_regression_analysis(self, df):
         """
             Выполнение линейной регрессии для оценки влияния цен BTC на цены ETH.

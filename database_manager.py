@@ -1,7 +1,8 @@
+from datetime import datetime, timedelta
 import pandas as pd
 from sqlalchemy import create_engine, Table, Column, Integer, Float, String, MetaData, DateTime, text
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime, timedelta
+
 
 
 class DatabaseManager:
@@ -60,9 +61,10 @@ class DatabaseManager:
             - symbol: символ криптовалюты для извлечения данных.
         """
         with self.engine.begin() as conn:
-            five_minutes_ago = datetime.now() - timedelta(minutes=5)
+            one_hour_ago = datetime.now() - timedelta(hours=1)
             query = text(
-                f"SELECT timestamp, price, quantity, symbol FROM trades WHERE symbol = '{symbol}' AND timestamp >= '{five_minutes_ago}' ORDER BY timestamp ASC"
+                f"SELECT timestamp, price, quantity, symbol FROM trades WHERE symbol = '{symbol}' "
+                f"AND timestamp >= '{one_hour_ago}' ORDER BY timestamp ASC"
             )
             df = pd.read_sql_query(query, conn)
             df.sort_values(by='timestamp', inplace=True)
@@ -70,10 +72,10 @@ class DatabaseManager:
 
     def delete_old_data(self):
         """
-            Удаление устаревших данных из базы данных (старше 5 минут).
+            Удаление устаревших данных из базы данных (старше 1 часа).
         """
         with self.engine.begin() as conn:
-            five_minutes_ago = datetime.now() - timedelta(minutes=5)
+            one_hour_ago = datetime.now() - timedelta(hours=1)
             query = text(
-                f"DELETE FROM trades WHERE timestamp < '{five_minutes_ago}'")
+                f"DELETE FROM trades WHERE timestamp < '{one_hour_ago}'")
             conn.execute(query)
