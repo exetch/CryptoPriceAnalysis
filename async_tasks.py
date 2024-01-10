@@ -32,24 +32,20 @@ async def clean_old_data(db_manager, logger):
         logger.info("Удаление устаревших данных...")
 
 
-async def analyze_data_forever(logger, analyzer):
+async def analyze_data_forever(logger, analyzer, strategy_name):
     """
-        Бесконечный асинхронный цикл для постоянного анализа данных о ценах ETH и BTC.
-
-        Аргументы:
-        - logger: экземпляр logger для логирования действий и ошибок.
-        - analyzer: экземпляр ETHPriceAnalysis для анализа ценовых данных.
+    Бесконечный асинхронный цикл для анализа данных.
     """
     while True:
         result = analyzer.run_analysis()
-        logger.info(result)
+        logger.info(f"{strategy_name} analysis result: {result}")
         if result is None:
-            logger.warning("Недостаточно данных для анализа")
-        if result:
+            logger.warning(f"{strategy_name}: Недостаточно данных для анализа")
+        elif result:
             actual_price, predicted_price, percentage_change = result
             if abs(percentage_change) > 1:
                 logger.warning(
-                    f"Фактическая цена ETH: {actual_price}\n"
-                    f"Ожидаемая цена ETH c учетом движения BTC: {predicted_price}\n"
+                    f"{strategy_name} - Фактическая цена ETH: {actual_price}, "
+                    f"Ожидаемая цена ETH: {predicted_price}, "
                     f"Собственное изменение цены ETH: {percentage_change}%")
         await asyncio.sleep(60)

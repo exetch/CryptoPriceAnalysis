@@ -4,6 +4,9 @@ from sqlalchemy import create_engine, Table, Column, Integer, Float, String, Met
 from sqlalchemy.exc import SQLAlchemyError
 
 
+FETCHING_TIME_INTERVAL = 1
+DELETING_TIME_INTERVAL = 1
+
 
 class DatabaseManager:
     """
@@ -47,7 +50,7 @@ class DatabaseManager:
                 with self.engine.connect() as conn:
                     conn.execute(self.trades.insert(), self.data_buffer)
                     conn.commit()
-                logger.info("Успешная вставка пакета данных размером %d", len(self.data_buffer))
+                logger.debug("Успешная вставка пакета данных размером %d", len(self.data_buffer))
             except SQLAlchemyError as e:
                 logger.error("Ошибка при вставке данных: %s", e)
             finally:
@@ -61,10 +64,10 @@ class DatabaseManager:
             - symbol: символ криптовалюты для извлечения данных.
         """
         with self.engine.begin() as conn:
-            one_hour_ago = datetime.now() - timedelta(hours=1)
+            time_interval = datetime.now() - timedelta(days=FETCHING_TIME_INTERVAL)
             query = text(
                 f"SELECT timestamp, price, quantity, symbol FROM trades WHERE symbol = '{symbol}' "
-                f"AND timestamp >= '{one_hour_ago}' ORDER BY timestamp ASC"
+                f"AND timestamp >= '{time_interval}' ORDER BY timestamp ASC"
             )
             df = pd.read_sql_query(query, conn)
             df.sort_values(by='timestamp', inplace=True)
@@ -75,7 +78,7 @@ class DatabaseManager:
             Удаление устаревших данных из базы данных (старше 1 часа).
         """
         with self.engine.begin() as conn:
-            one_hour_ago = datetime.now() - timedelta(hours=1)
+            time_interval = datetime.now() - timedelta(days=DELETING_TIME_INTERVAL)
             query = text(
-                f"DELETE FROM trades WHERE timestamp < '{one_hour_ago}'")
+                f"DELETE FROM trades WHERE timestamp < '{time_interval}'")
             conn.execute(query)

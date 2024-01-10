@@ -1,81 +1,105 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from sklearn.ensemble import RandomForestRegressor
 
-
-class ETHPriceAnalysis:
-    def __init__(self, db_manager):
-        """
-            Конструктор класса
-        """
-        self.db_manager = db_manager
-
+class AnalysisStrategy(ABC):
     def prepare_data(self, df_eth, df_btc):
-        """
-            Слияние двух датафреймов по временным меткам.
+        df_eth = df_eth.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
+        df_btc = df_btc.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
 
-            Аргументы:
-            df_eth -- DataFrame содержащий данные по ETH
-            df_btc -- DataFrame содержащий данные по BTC
-
-            Возвращает:
-            DataFrame, в котором каждая строка представляет собой слияние данных
-            ETH и BTC по ближайшей временной метке.
-        """
         merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+
+        # Создание задержек для цен
+        for lag in range(1, 4):  # Пример: 3 минутные задержки
+            merged_data[f'lag_price_eth_{lag}'] = merged_data['price_eth'].shift(lag)
+            merged_data[f'lag_price_btc_{lag}'] = merged_data['price_btc'].shift(lag)
+
+        merged_data.dropna(inplace=True)
+
         return merged_data
-    def perform_regression_analysis(self, df):
-        """
-            Выполнение линейной регрессии для оценки влияния цен BTC на цены ETH.
 
-            Аргументы:
-            df -- DataFrame, содержащий объединенные данные ETH и BTC
+    @abstractmethod
+    def analyze(self, df):
+        pass
 
-            Возвращает:
-            Модель линейной регрессии, описывающая зависимость цен ETH от цен BTC.
-        """
-        df = df.replace([np.inf, -np.inf], np.nan).dropna()  # Очистка данных
+    @abstractmethod
+    def predict(self, df, model):
+        pass
+
+
+class LinearRegressionStrategy(AnalysisStrategy):
+    # def prepare_data(self, df_eth, df_btc):
+    #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+    #     return merged_data
+
+    def analyze(self, df):
+        df = df.replace([np.inf, -np.inf], np.nan).dropna()
         X = sm.add_constant(df['price_btc'])
         y = df['price_eth']
         model = sm.OLS(y, X).fit()
         return model
 
-    def calculate_predicted_eth_price(self, df, model):
-        """
-            Расчет предсказанных цен ETH на основе модели линейной регрессии.
-
-            Аргументы:
-            df -- DataFrame, содержащий данные для анализа
-            model -- Модель линейной регрессии
-
-            Возвращает:
-            Обновленный DataFrame с добавленным столбцом предсказанных цен ETH.
-        """
+    def predict(self, df, model):
         df['predicted_eth_price'] = model.predict(sm.add_constant(df['price_btc']))
         return df
 
+class RandomForestStrategy(AnalysisStrategy):
+    # def prepare_data(self, df_eth, df_btc):
+    #     # Метод подготовки данных
+    #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+    #     return merged_data
+
+    def analyze(self, df):
+        # Разделение данных на признаки и целевую переменную
+        X = df[['price_btc']]
+        y = df['price_eth']
+        model = RandomForestRegressor()
+        model.fit(X, y)
+        return model
+
+    def predict(self, df, model):
+        df['predicted_eth_price'] = model.predict(df[['price_btc']])
+        return df
+
+class ETHPriceAnalysis:
+    def __init__(self, db_manager, strategy: AnalysisStrategy):
+        self.db_manager = db_manager
+        self.strategy = strategy
+
+
     def run_analysis(self, symbol_eth='ETHUSDT', symbol_btc='BTCUSDT'):
-        """
-            Запускает анализ данных, включая регрессию и расчет изменения цены.
-
-            Аргументы:
-            symbol_eth -- Символ для ETH.
-            symbol_btc -- Символ для BTC.
-
-            Возвращает:
-            Фактическая цена ETH, предсказанная цена ETH и процентное изменение.
-        """
         df_eth = self.db_manager.fetch_data(symbol_eth)
         df_btc = self.db_manager.fetch_data(symbol_btc)
+
         if df_eth.empty or df_btc.empty:
             return None
-        df = self.prepare_data(df_eth, df_btc)
-        model = self.perform_regression_analysis(df)
-        self.calculate_predicted_eth_price(df, model)
+
+        df = self.strategy.prepare_data(df_eth, df_btc)
+        model = self.strategy.analyze(df)
+        df = self.strategy.predict(df, model)
         # Получить последнее наблюдение
         last_observation = df.iloc[-1]
-        actual_price = last_observation['price_eth']
-        predicted_price = last_observation['predicted_eth_price']
+        actual_price = round(last_observation['price_eth'], 2)
+        predicted_price = round(last_observation['predicted_eth_price'], 2)
         percentage_change = round(((actual_price - predicted_price) / predicted_price) * 100, 2)
 
         return actual_price, predicted_price, percentage_change
+
+    def calculate_cross_correlation(self, df):
+        """
+        Вычисление кросс-корреляции между ценами ETH и BTC.
+
+        Аргументы:
+        df -- DataFrame, содержащий объединенные данные ETH и BTC
+
+        Возвращает:
+        Серию значений кросс-корреляции.
+        """
+        df = df.sort_values(by='timestamp')
+        # Вычисление кросс-корреляции
+        lag_values = range(-10, 11)
+        cross_corrs = [df['price_eth'].corr(df['price_btc'].shift(lag)) for lag in lag_values]
+        return pd.Series(cross_corrs, index=lag_values)
