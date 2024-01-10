@@ -26,7 +26,7 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(
         fetch_data_forever(db_manager, logger),
-        analyze_data_forever(logger, linear_analyzer, LINEAR_REGRESSION),
+        # analyze_data_forever(logger, linear_analyzer, LINEAR_REGRESSION),
         analyze_data_forever(logger, random_forest_analyzer, RANDOM_FOREST),
         clean_old_data(db_manager, logger)
     ))
