@@ -1,6 +1,6 @@
 import asyncio
+from telegram_bot import send_notification
 from websocket_client import fetch_trades
-
 
 async def fetch_data_forever(db_manager, logger):
     """
@@ -44,8 +44,9 @@ async def analyze_data_forever(logger, analyzer, strategy_name):
         elif result:
             actual_price, predicted_price, percentage_change = result
             if abs(percentage_change) > 1:
-                logger.warning(
-                    f"{strategy_name} - Фактическая цена ETH: {actual_price}, "
-                    f"Ожидаемая цена ETH: {predicted_price}, "
-                    f"Собственное изменение цены ETH: {percentage_change}%")
+                message = f"{strategy_name} - Фактическая цена ETH: {actual_price}, " \
+                          f"Ожидаемая цена ETH: {predicted_price}, " \
+                          f"Изменение цены ETH: {percentage_change}%"
+                logger.warning(message)
+                await send_notification(message)
         await asyncio.sleep(60)

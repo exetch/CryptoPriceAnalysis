@@ -20,6 +20,13 @@ git clone https://github.com/exetch/CryptoPriceAnalysis.git
 ```bash
 pip install -r requirements.txt
 ```
+Создайте файл .env с вашими данными для подключения к БД Postgres
+```makefile
+DB_USER=your_DB_USER
+DB_PASSWORD=your_DB_PASSWORD
+DB_HOST=localhost
+DB_NAME=your_DB_NAME
+```
 ## Запуск
 Запустите программу:
 ```bash

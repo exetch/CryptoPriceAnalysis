@@ -5,11 +5,13 @@ import logging.config
 from async_tasks import fetch_data_forever, clean_old_data, analyze_data_forever
 from eth_analysis import ETHPriceAnalysis, LinearRegressionStrategy, RandomForestStrategy
 from database_manager import DatabaseManager
+from telegram_bot import run_bot
 
 logging.config.fileConfig('logging.ini')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+BOT_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 DATABASE_URI = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}" \
                f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
 LINEAR_REGRESSION = "Linear Regression"
@@ -24,9 +26,10 @@ if __name__ == "__main__":
     linear_analyzer = ETHPriceAnalysis(db_manager, LinearRegressionStrategy())
     random_forest_analyzer = ETHPriceAnalysis(db_manager, RandomForestStrategy())
     loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
     loop.run_until_complete(asyncio.gather(
         fetch_data_forever(db_manager, logger),
-        analyze_data_forever(logger, linear_analyzer, LINEAR_REGRESSION),
+        # analyze_data_forever(logger, linear_analyzer, LINEAR_REGRESSION),
         analyze_data_forever(logger, random_forest_analyzer, RANDOM_FOREST),
         clean_old_data(db_manager, logger)
     ))
