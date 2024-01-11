@@ -5,18 +5,21 @@ import pandas as pd
 import statsmodels.api as sm
 from sklearn.ensemble import RandomForestRegressor
 
+
 class AnalysisStrategy(ABC):
     def prepare_data(self, df_eth, df_btc):
+        # Агрегирование данных по минутам
         df_eth = df_eth.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
         df_btc = df_btc.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
 
+        # Слияние данных ETH и BTC
         merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
 
-        # Создание задержек для цен
-        for lag in range(1, 4):  # Пример: 3 минутные задержки
-            merged_data[f'lag_price_eth_{lag}'] = merged_data['price_eth'].shift(lag)
+        # Добавление временных задержек для цен BTC
+        for lag in range(1, 4):
             merged_data[f'lag_price_btc_{lag}'] = merged_data['price_btc'].shift(lag)
 
+        # Удаление строк с NaN значениями
         merged_data.dropna(inplace=True)
 
         return merged_data
@@ -33,6 +36,7 @@ class AnalysisStrategy(ABC):
 class LinearRegressionStrategy(AnalysisStrategy):
     # def prepare_data(self, df_eth, df_btc):
     #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+    #     merged_data.dropna(inplace=True)
     #     return merged_data
 
     def analyze(self, df):
@@ -48,8 +52,8 @@ class LinearRegressionStrategy(AnalysisStrategy):
 
 class RandomForestStrategy(AnalysisStrategy):
     # def prepare_data(self, df_eth, df_btc):
-    #     # Метод подготовки данных
     #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
+    #     merged_data.dropna(inplace=True)
     #     return merged_data
 
     def analyze(self, df):
@@ -61,6 +65,7 @@ class RandomForestStrategy(AnalysisStrategy):
         return model
 
     def predict(self, df, model):
+        # Добавление ожидаемой цены на ETH с поправкой на движение BTC
         df['predicted_eth_price'] = model.predict(df[['price_btc']])
         return df
 

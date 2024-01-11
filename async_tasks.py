@@ -32,7 +32,7 @@ async def clean_old_data(db_manager, logger):
         logger.info("Удаление устаревших данных...")
 
 
-async def analyze_data_forever(logger, analyzer, strategy_name):
+async def analyze_data_forever(logger, analyzer, strategy_name,sensitivity_level):
     """
     Бесконечный асинхронный цикл для анализа данных.
     """
@@ -43,7 +43,7 @@ async def analyze_data_forever(logger, analyzer, strategy_name):
             logger.warning(f"{strategy_name}: Недостаточно данных для анализа")
         elif result:
             actual_price, predicted_price, percentage_change = result
-            if abs(percentage_change) > 1:
+            if abs(percentage_change) > sensitivity_level:
                 message = f"{strategy_name} - Фактическая цена ETH: {actual_price}, " \
                           f"Ожидаемая цена ETH: {predicted_price}, " \
                           f"Изменение цены ETH: {percentage_change}%"

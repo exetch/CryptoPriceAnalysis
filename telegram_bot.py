@@ -1,9 +1,12 @@
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from dotenv import load_dotenv
 
-API_TOKEN = "6731575436:AAHNhSQJvTgcfA9KabdWmlDraxpIMuAGRH4"
 
-bot = Bot(token=API_TOKEN)
+load_dotenv()
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
