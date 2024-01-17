@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-
-import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from sklearn.ensemble import RandomForestRegressor
@@ -9,8 +7,8 @@ from sklearn.ensemble import RandomForestRegressor
 class AnalysisStrategy(ABC):
     def prepare_data(self, df_eth, df_btc):
         # Агрегирование данных по минутам
-        df_eth = df_eth.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
-        df_btc = df_btc.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
+        # df_eth = df_eth.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
+        # df_btc = df_btc.set_index('timestamp').resample('1T').mean(numeric_only=True).reset_index()
 
         # Слияние данных ETH и BTC
         merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
@@ -34,13 +32,10 @@ class AnalysisStrategy(ABC):
 
 
 class LinearRegressionStrategy(AnalysisStrategy):
-    # def prepare_data(self, df_eth, df_btc):
-    #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
-    #     merged_data.dropna(inplace=True)
-    #     return merged_data
-
     def analyze(self, df):
-        df = df.replace([np.inf, -np.inf], np.nan).dropna()
+        if df.empty or df.isnull().all().all():
+            print("Ошибка: DataFrame пустой или содержит только NaN значения.")
+            return None
         X = sm.add_constant(df['price_btc'])
         y = df['price_eth']
         model = sm.OLS(y, X).fit()
@@ -51,12 +46,10 @@ class LinearRegressionStrategy(AnalysisStrategy):
         return df
 
 class RandomForestStrategy(AnalysisStrategy):
-    # def prepare_data(self, df_eth, df_btc):
-    #     merged_data = pd.merge_asof(df_eth, df_btc, on='timestamp', suffixes=('_eth', '_btc'))
-    #     merged_data.dropna(inplace=True)
-    #     return merged_data
-
     def analyze(self, df):
+        if df.empty or df.isnull().all().all():
+            print("Ошибка: DataFrame пустой или содержит только NaN значения.")
+            return None
         # Разделение данных на признаки и целевую переменную
         X = df[['price_btc']]
         y = df['price_eth']
@@ -78,7 +71,6 @@ class ETHPriceAnalysis:
     def run_analysis(self, symbol_eth='ETHUSDT', symbol_btc='BTCUSDT'):
         df_eth = self.db_manager.fetch_data(symbol_eth)
         df_btc = self.db_manager.fetch_data(symbol_btc)
-
         if df_eth.empty or df_btc.empty:
             return None
 
