@@ -24,7 +24,7 @@ async def fetch_trades(symbol, callback, logger):
         async with websockets.connect(uri) as ws:
             while True:
                 data = await ws.recv()
-                logger.debug("Получены данные от %s: %s", symbol, data)
+                logger.info("Получены данные от %s: %s", symbol, data)
                 trade = json.loads(data)
                 trade_data = {
                     'symbol': trade['s'],

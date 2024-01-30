@@ -1,4 +1,7 @@
 import asyncio
+import concurrent.futures
+import time
+
 from telegram_bot import send_notification
 from websocket_client import fetch_trades
 
@@ -32,21 +35,31 @@ async def clean_old_data(db_manager, logger):
         logger.info("Удаление устаревших данных...")
 
 
-async def analyze_data_forever(logger, analyzer, strategy_name,sensitivity_level):
+async def analyze_data_forever(logger, analyzer, strategy_name, sensitivity_level):
     """
     Бесконечный асинхронный цикл для анализа данных.
     """
-    while True:
-        result = analyzer.run_analysis()
-        logger.info(f"{strategy_name} analysis result: {result}")
-        if result is None:
-            logger.warning(f"{strategy_name}: Недостаточно данных для анализа")
-        elif result:
-            actual_price, predicted_price, percentage_change = result
-            if abs(percentage_change) > sensitivity_level:
-                message = f"{strategy_name} - Фактическая цена ETH: {actual_price}, " \
-                          f"Ожидаемая цена ETH: {predicted_price}, " \
-                          f"Изменение цены ETH: {percentage_change}%"
-                logger.warning(message)
-                await send_notification(message)
-        await asyncio.sleep(60)
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        loop = asyncio.get_event_loop()
+        while True:
+            start_time = time.time()
+
+            result = await loop.run_in_executor(pool, analyzer.run_analysis)
+
+            end_time = time.time()
+            execution_time = end_time - start_time
+
+            logger.info(f"{strategy_name} analysis duration: {execution_time} seconds")
+            logger.info(f"{strategy_name} analysis result: {result}")
+            logger.info(f"{strategy_name} analysis result: {result}")
+            if result is None:
+                logger.warning(f"{strategy_name}: Недостаточно данных для анализа")
+            elif result:
+                actual_price, predicted_price, percentage_change = result
+                if abs(percentage_change) > sensitivity_level:
+                    message = f"{strategy_name} - Фактическая цена ETH: {actual_price}, " \
+                              f"Ожидаемая цена ETH: {predicted_price}, " \
+                              f"Изменение цены ETH: {percentage_change}%"
+                    logger.warning(message)
+                    await send_notification(message)
+            await asyncio.sleep(60)
