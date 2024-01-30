@@ -50,7 +50,7 @@ class DatabaseManager:
                 with self.engine.connect() as conn:
                     conn.execute(self.trades.insert(), self.data_buffer)
                     conn.commit()
-                logger.debug("Успешная вставка пакета данных размером %d", len(self.data_buffer))
+                logger.info("Успешная вставка пакета данных размером %d", len(self.data_buffer))
             except SQLAlchemyError as e:
                 logger.error("Ошибка при вставке данных: %s", e)
             finally:
@@ -58,7 +58,7 @@ class DatabaseManager:
 
     def fetch_data(self, symbol):
         """
-            Извлечение данных о торгах для указанного символа за последние 5 минут.
+            Извлечение данных о торгах для указанного символа за последние сутки.
 
             Аргументы:
             - symbol: символ криптовалюты для извлечения данных.
@@ -75,7 +75,7 @@ class DatabaseManager:
 
     def delete_old_data(self):
         """
-            Удаление устаревших данных из базы данных (старше 1 часа).
+            Удаление устаревших данных из базы данных (старше 1 суток).
         """
         with self.engine.begin() as conn:
             time_interval = datetime.now() - timedelta(days=DELETING_TIME_INTERVAL)
